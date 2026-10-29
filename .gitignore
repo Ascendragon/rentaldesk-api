@@ -10,3 +10,9 @@
 ###< symfony/framework-bundle ###
 /.phpunit.cache/
 .idea/
+
+###> phpunit/phpunit ###
+/phpunit.xml
+###< phpunit/phpunit ###
+/*.zip
+*:Zone.Identifier
