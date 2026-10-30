@@ -1,35 +1,30 @@
 # Контекст RentalDesk для следующего диалога
 
-**Обновлено 30.10.2026.** Первым делом читать `docs/README.md`, `PRODUCT_VISION.md`, `ARCHITECTURE.md`, `ENGINEERING_PROCESS.md`, `CURRENT_STATE.md`, `API_CONTRACTS.md`, `ROADMAP.md` и ADR. Файлы Git-репозитория имеют приоритет над этим снимком.
+**Актуализировано 30.10.2026.** Сначала читать `PRODUCT_VISION.md`, `ARCHITECTURE.md`, `ENGINEERING_PROCESS.md`, `CURRENT_STATE.md`, `API_CONTRACTS.md`, `ROADMAP.md` и ADR. Git-коммиты и актуальные тесты приоритетнее этого снимка.
 
-## Зачем мы делаем проект
+## Цель и разделение ответственности
 
-RentalDesk — инженерный учебно-практический продукт проката инструмента, а не самоцельная «уникальная SaaS-идея». Цель пользователя — самостоятельно освоить backend уровня настоящей PHP/Symfony-коммерческой разработки. Ассистент ставит цельный тикет, обсуждает архитектуру, ревьюит, **сам отвечает за документацию и Vue/TS frontend**, но **не пишет backend вместо пользователя**, если тот прямо не попросил.
+RentalDesk — инженерный проект проката строительного инструмента. Пользователь осваивает зрелую backend-разработку, архитектуру, PostgreSQL, тестирование и Git с постепенным переносом ответственности. **Пользователь самостоятельно пишет PHP и защищает решения**, ассистент ставит бизнес-тикеты, проводит ревью, постепенно обучает Git, **создаёт Vue/TS frontend и поддерживает документацию**. Не подменять его backend-код готовым решением без запроса. Учить переносимому мышлению Senior Engineer, а не только Symfony.
 
-## Технологии и принципы
+## Стек
 
-PHP 8.5, Symfony 7.4, Doctrine ORM/DBAL, PostgreSQL в Docker, WSL; Vue 3/TypeScript/Vite, Graphite & Ember. REST API, модульный монолит. Не добавлять Kafka/K8s/RabbitMQ и прочие технологии без задачи. API DTO/Validator → application service → Entity → ORM/DBAL/PostgreSQL. Деньги в целых копейках; бизнес-инварианты в домене и БД; конкурентные операции должны быть атомарными.
+PHP 8.5.12, Symfony 7.4, Doctrine ORM/DBAL, PostgreSQL/Docker, WSL; Vue 3, TypeScript, Vite, Graphite & Ember. Модульный монолит и REST. Без технологического карго-культа.
 
-## Подтверждённое состояние
+## Реально сделано
 
-- `InventoryItem` + миграция + DB CHECK, GET/POST `/api/inventory`, создание из Vue Pro v0.3.1 **работает**.
-- `Asset` + `AssetStatus` реализованы; `AssetTest` **9 тестов / 18 assertions**.
-- Миграция `Version20261029215033`; пользователь подтвердил её доработку/применение. Валидность ORM mapping проверена после изоляции незавершённых заказов.
-- `AssetPersistenceTest` с PostgreSQL успешно выполнен **дважды** (по 8 assertions), для изоляции согласован rollback.
-- Backend Git baseline **`433fa85`**; активная ветка `feature/asset-model`. Были созданы коммиты доменной модели, миграции, инфраструктуры тестов и регистрации Asset; origin для feature-ветки подтверждён.
-- `CreateAssetRequest` и регистрация Asset реализованы; ошибки 400/404/409/422 проверены функционально.
+- `InventoryItem`: CHECK для остатков; GET/POST каталога.
+- `Asset`: физическая единица, статус `active/maintenance/retired`, уникальный `inventoryCode`, цена в копейках, `purchasedAt`, ORM migration/persistence.
+- `POST /api/inventory/{id}/assets`: регистрация и `201 AssetResponse`; 409 при конфликте кода, 404, 422.
+- `GET /api/inventory/{id}/assets` (**RENTAL-005.6**): 200 root array sorted id ASC, 200 [], 404 RFC 9457. Тест `AssetListApiTest`: 3/19.
+- `ApiExceptionListener` RFC 9457 для 400/404/405/409/422/500; отдельные 6/48 тесты.
+- **Полный PHPUnit: 21 тест / 96 assertions, PASS**, подтверждён пользователем 30.10.2026.
+- PostgreSQL `EXPLAIN ANALYZE`: Bitmap Index Scan → Bitmap Heap Scan → Sort, 1 строка, 0.102 мс; уже есть индекс по `inventory_item_id`, дополнительный индекс пока не нужен.
+- `feature/asset-list-api` → **`2aeb597`**, push на GitHub выполнен, upstream установлен. Ветку пока не сливать напрямую в main без учёта stacked зависимостей.
 
-## Текущий этап: RENTAL-CORE-001 (30.10.2026)
+## Frontend / Docs
 
-Пользователь самостоятельно реализовал `InventoryCodeAlreadyExistsException`, доработал `AssetService`, написал `ApiExceptionListener` для RFC 9457 и тесты `ApiProblemDetailsTest` через Symfony `WebTestCase`. Последний полученный вывод **6 тестов / 48 assertions, PASS (0.319 с)**. Сценарии: 400, 404, 405, 409, 422, 500; 409 тестировался через реальный UNIQUE PostgreSQL с DBAL cleanup, 500 через PHPUnit mock `AssetService`, секретная строка отсутствовала в HTTP-ответе, но отображалась в логах теста.
+У пользователя отдельный Vue frontend; ассистент подготовил **v0.5** с реальным GET-реестром, поиском, фильтрами, загрузкой/ошибками/пустым состоянием, повторным GET после POST. **Сборка пользователя и браузерная проверка не подтверждены**. В локальной среде ассистента npm-registry недоступен; обещать собранный продукт нельзя. Backend-документы актуализированы после RENTAL-005.6.
 
-**Следующие действия:** проверить название test DB, запустить весь PHPUnit, коммит backend, применить frontend v0.4.2 для Problem Details, обновить Git-документы; затем RENTAL-005.6 `GET /api/inventory/{id}/assets`. Не писать PHP вместо пользователя, если он не просит; frontend и документы остаются ответственностью ассистента.
+## Главный риск и ближайшее направление
 
-## Важнейшие риски
-
-`InventoryItem.stock/reserved` всё ещё используется и **не синхронизируется** с `Asset`. Нельзя создавать второй источник истины без стратегии перехода/backfill. `RentalOrder`, `OrderItem` — незавершённые классы, ранее ломали `doctrine:schema:validate`; держать изолированно до отдельного тикета. Значимые изменения фиксировать Git-коммитами и обновлять `docs/`. Ассистент не имеет прямого доступа к пользовательской WSL-папке: готовит docs ZIP/patch для применения и ревью пользователем.
-
-
-## Дополнение 30.10.2026, RENTAL-005.5 / frontend v0.4
-
-Пользователь написал `CreateAssetRequest`, `AssetService`, `AssetController`, `AssetResponse`; HTTP API регистрации `POST /api/inventory/{id}/assets` заявлен работающим пользователем, после замечаний были добавлены 404/409 и согласован JSON-контракт. Для полной уверенности получить итоговые HTTP-ответы/тест. Подготовлен frontend v0.4 с регистрацией Asset, улучшенным реестром и статусами. Он использует только реальные POST-ответы, а для полного реестра ожидает **новый GET /api/inventory/{id}/assets**; без него показывает только созданные в текущем сеансе экземпляры. Применение v0.4 на компьютере пользователя ещё не подтверждено. Документация на ответственности ассистента.
+`InventoryItem.stock/reserved` пока не связаны с числом `Asset`; нельзя молча считать одно производным от другого. Стратегия миграции/источника истины требует ADR. `RentalOrder`/`OrderItem` незавершены и изолированы. После подтверждения Vue v0.5 переходить к осмысленной продуктовой фиче заказа RENTAL-006 и её проектированию. Git передавать постепенно: branch/status, stage/diff, commit/push уже разобраны; следующий шаг fetch/pull и PR.

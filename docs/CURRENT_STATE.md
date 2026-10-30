@@ -1,47 +1,42 @@
 # Текущее состояние RentalDesk
 
-**Последнее подтверждённое состояние: 30.10.2026 (по переписке).** Это живой файл: дату обновлять при следующих завершённых этапах. Содержимое Git-репозитория в WSL здесь недоступно для автоматической проверки.
+**Актуализировано 30.10.2026 по подтверждениям пользователя и ветке `feature/asset-list-api`.** Это снимок, а не мониторинг локального WSL или CI.
 
-## Завершено и подтверждено
+## Подтверждённый backend
 
-- PHP 8.5.12, Symfony 7.4, Doctrine ORM/DBAL, PostgreSQL в Docker; backend работает в WSL.
-- `InventoryItem`, миграция и PostgreSQL `CHECK` для `stock` и `reserved`.
-- `GET /api/inventory`: реальный JSON-массив с `available` из БД.
-- `POST /api/inventory`: DTO/Validator, сервис, `201 Created`; пользователь подтвердил создание из Vue и отображение новой записи.
-- Vue 3 + TypeScript + Vite, тема Graphite & Ember; пользователь показал успешный запуск Vite для **Pro v0.4**; исправление Vite `0.4.1` подготовлено. `v0.4.2` (RFC 9457) подготовлено как патч, пользовательский build ещё не подтверждён.
-- `Asset` и `AssetStatus` реализованы: уникальный `inventoryCode`, ManyToOne к `InventoryItem`, цена/дата покупки, переходы `active`, `maintenance`, `retired`.
-- **RENTAL-005.2:** `AssetTest`: 9 unit-тестов, 18 assertions, успешно.
-- **RENTAL-005.3:** Doctrine mapping после изоляции незавершённых заказов валиден; миграция `Version20261029215033` сгенерирована для `asset`. Пользователь сообщил, что доработал миграцию и применил её. Наличие всех дополнительных CHECK не перепроверено отдельным SQL-выводом.
-- **RENTAL-005.4:** интеграционный `AssetPersistenceTest` на реальной PostgreSQL прошёл **два раза подряд** (каждый раз 1 тест, 8 assertions). Проверялся ORM round-trip с `clear()`; транзакционный rollback согласован как стратегия изоляции.
+- PHP 8.5.12, Symfony 7.4, Doctrine ORM/DBAL, PostgreSQL в Docker и WSL.
+- `InventoryItem` с DB CHECK; `GET/POST /api/inventory` с JSON DTO и валидацией.
+- `Asset`, `AssetStatus`, UNIQUE `inventory_code`, связь ManyToOne к `InventoryItem`, миграция и реальная ORM-persistence.
+- `POST /api/inventory/{id}/assets`: сохранение Asset и `AssetResponse`, обработка конфликта `409`.
+- `GET /api/inventory/{id}/assets`: корневой массив `AssetResponse[]`, сортировка по `id ASC`, `200 []` для пустой модели и RFC 9457 `404` для отсутствующей.
+- `ApiExceptionListener`: RFC 9457 `application/problem+json`, коды `400/404/405/409/422/500`; тестовая ошибка `SECRET-123` не раскрывается в HTTP.
+- **Последний полный запуск:** `php bin/phpunit` → **21 тест, 96 assertions, PASS, 0.433 с**; `AssetListApiTest` → 3 теста, 19 assertions. `rentaldesk_test` проверяется в тестах GET.
+- `EXPLAIN (ANALYZE, BUFFERS)` для SELECT Asset по модели: `Bitmap Index Scan` → `Bitmap Heap Scan` → `Sort`; 1 фактическая строка, 0.102 мс. Существующий индекс `(inventory_item_id)`, составной пока не вводится.
 
-## Git: что подтверждено
+## Git
 
-- `433fa85` — локальный baseline `main`.
-- В `feature/asset-model` были последовательно созданы коммиты для доменной модели, persistence, PHPUnit и регистрации Asset. Ветка сообщала `up to date with origin/feature/asset-model`.
-- Согласована дочерняя ветка `feature/api-problem-details`; **фактическое состояние её коммитов/публикации по последнему диалогу не показано**. Перед публикацией обязательно `git status`, ревью diff и проверка секретов.
-- Настройка LF и Git внутри WSL согласованы. Исходники на локальной машине пользователя недоступны для автоматической проверки.
+- `main`: `433fa85` baseline.
+- `feature/asset-model`: `2646333` (head из вывода Git пользователя).
+- `feature/api-problem-details`: `3cd4475`, RFC 9457.
+- `feature/asset-list-api`: **`2aeb597`**, `feat(asset): add asset listing endpoint and functional tests`, отправлен в `origin`, upstream установлен.
+- `.env.test` остался неотслеживаемым локальным файлом: не добавлять в Git без проверки секретов.
+- Ветки зависимы; их интеграцию в `main` планировать отдельно, без `push --force`.
 
-## RENTAL-CORE-001: функциональные тесты
+## Frontend
 
-- `AssetService` переводит DBAL `UniqueConstraintViolationException` в `InventoryCodeAlreadyExistsException` с сохранением `previous`.
-- `ApiExceptionListener` использует `kernel.exception`, формирует `application/problem+json`, включая `code` и `violations` для ошибок DTO; HTTP-слой не обрабатывает DBAL напрямую.
-- 30.10.2026 пользователь выполнил `php bin/phpunit tests/Functional/ApiProblemDetailsTest.php` с результатом **6/6 тестов и 48 assertions** за 0.319 c.
-- Покрыты `400` (malformed JSON), `404` (отсутствующая модель), `405` (`Allow`), `409` (реальный UNIQUE PostgreSQL), `422` (валидация с полями) и `500` (ответ не раскрывает текст исключения).
-- Предупреждения Symfony `[error]`/`[critical]` в тестовом выводе не означали падение тестов. Отдельная задача: безопасное логирование (тестовый маркер `SECRET-123` попал в stdout логов, но не в HTTP).
-- **Не подтверждены:** полный запуск PHPUnit, отдельная проверка имени test DB в последнем диалоге, frontend build v0.4.2 и фиксация тикета в Git.
+- Vue 3/TypeScript/Vite, Graphite & Ember. Реальный каталог и регистрация через POST.
+- Пакет v0.4.2 для RFC 9457 подготовлен ранее; локальная сборка пользователя не подтверждена.
+- **Пакет v0.5 подготовлен ассистентом:** реальный GET-реестр, состояния загрузки/ошибки/пустого ответа, поиск, фильтр статуса, обновление, повторное GET после успешного POST. Не считать внедрённым до `npm run build` и проверки в браузере.
 
-## Не готово
+## Открытые риски / невыполненное
 
-- `POST /api/inventory/{id}/assets` реализован; ошибки проверены HTTP-тестами. Отдельный тест `201` регистрации ещё полезно добавить. Требуется финальная фиксация в Git.
-- `GET /api/inventory/{id}/assets` для полного списка **не реализован**; следующий backend-тикет.
-- API списка/деталей экземпляров, Vue-реестр экземпляров — будущий этап RENTAL-005.6.
-- `RentalOrder` / `OrderItem` — незавершённые Entity. Из-за некорректной двусторонней связи ранее блокировали Doctrine mapping, были изолированы на время работы с `Asset`; восстановление требует отдельного ревью.
-- Переход от `InventoryItem.stock/reserved` к поэкземплярным остаткам **не проведён**. Пока запрещено считать их двумя независимыми источниками истины.
-- Заказы, бронирования на даты, RBAC, аудит, DamageProof, финансы, асинхронная обработка и production CI — не реализованы.
+- `InventoryItem.stock/reserved` не синхронизированы с `Asset`; два источника истины запрещены. Нужен ADR по миграции и backfill до изменения учёта.
+- `RentalOrder` и `OrderItem` остаются незавершёнными и изолированными; бронирование/конкурентность/заказы ещё не реализованы.
+- Нет подтверждённого CI, отдельного HTTP-теста успеха `POST Asset 201`, UI v0.5 на WSL.
+- Логи тестового исключения содержат `SECRET-123`: ответ безопасен, но отдельная политика логирования требуется.
 
-## Ближайшие действия
+## Следующий шаг
 
-1. Проверить, что PHPUnit работает с `rentaldesk_test`, а не с рабочей PostgreSQL. Запустить полный набор тестов (`php bin/phpunit`).
-2. Проверить Git-ветку и изменения `RENTAL-CORE-001`, выполнить коммит после code review. Проверить, что `.env.test` и другие файлы не содержат секретов.
-3. Применить и собрать frontend v0.4.2 (единые ошибки Problem Details), проверить конфликт `409` и поля `422` в браузере.
-4. Следующий backend-тикет: `GET /api/inventory/{id}/assets`, 200 с массивом / 200 `[]` / 404; затем полноценное чтение Asset в Vue.
+1. Применить и собрать frontend v0.5, проверить в браузере список после обновления страницы, `200 []`, ошибку `404`, POST→GET.
+2. Освоить следующий Git-шаг: синхронизацию локальной и удалённой ветки; интеграция зависимых веток в `main` отдельным решением.
+3. Перед RENTAL-006 принять стратегию источника истины для количественного и поэкземплярного учёта.
