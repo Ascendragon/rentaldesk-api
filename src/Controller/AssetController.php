@@ -6,8 +6,9 @@ namespace App\Controller;
 use App\DTO\Request\CreateAssetRequest;
 use App\DTO\Response\AssetResponse;
 use App\Exception\InventoryItemNotFoundException;
+use App\Repository\AssetRepository;
+use App\Repository\InventoryItemRepository;
 use App\Service\AssetService;
-use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,9 +18,37 @@ use Symfony\Component\Routing\Attribute\Route;
 class AssetController extends AbstractController
 {
     public function __construct(
-        private AssetService $service
+        private AssetService $service,
+        private InventoryItemRepository $inventoryItemRepository,
+        private AssetRepository $assetRepository
     )
     {
+    }
+
+    #[Route(
+        '/api/inventory/{id}/assets',
+        methods: ['GET'],
+        format: 'json'
+    )]
+    public function index(int $id): JsonResponse
+    {
+        $inventoryItem = $this->inventoryItemRepository->find($id);
+        if ($inventoryItem === null) {
+            throw new InventoryItemNotFoundException(
+                "Inventory item with id {$id} not found"
+            );
+        }
+
+        $assets = $this->assetRepository->findBy(
+            ['inventoryItem' => $inventoryItem],
+            ['id' => 'ASC']
+        );
+        $items = array_map(
+            AssetResponse::fromEntity(...),
+            $assets
+        );
+
+        return $this->json($items);
     }
 
     #[Route(
