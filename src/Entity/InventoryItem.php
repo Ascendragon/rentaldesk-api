@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Entity;
 
@@ -87,7 +88,8 @@ class InventoryItem
         return true;
     }
 
-    public function rename(string $name) {
+    public function rename(string $name): void
+    {
         if (trim($name) === '') {
             throw new \InvalidArgumentException(
                 'Equipment name cannot be empty'

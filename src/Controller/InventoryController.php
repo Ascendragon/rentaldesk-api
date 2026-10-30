@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Controller;
 
@@ -22,27 +23,19 @@ class InventoryController extends AbstractController
     #[Route('/api/inventory', methods: ['GET'])]
     public function index(InventoryItemRepository $repository): JsonResponse
     {
-        $data = [];
-        $inventoryItems = $repository->findAll();
+        $items = array_map(
+            InventoryItemResponse::fromEntity(...),
+            $repository->findAll()
+        );
 
-        foreach($inventoryItems as $item) {
-            $data[] = [
-                'id' => $item->getId(),
-                'name' => $item->getName(),
-                'stock' => $item->getStock(),
-                'reserved' => $item->getReserved(),
-                'available' => $item->getAvailableUnits()
-            ];
-        }
-
-        return new JsonResponse($data, 200);
+        return $this->json($items);
     }
 
     #[Route('/api/inventory', methods: ['POST'], format: 'json')]
     public function create(
         #[MapRequestPayload(acceptFormat: 'json')]
         CreateInventoryItemRequest $request,
-    )
+    ): JsonResponse
     {
         $item = $this->service->create($request->name, $request->stock);
 

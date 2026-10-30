@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Service;
 
@@ -6,7 +7,6 @@ use App\Entity\Asset;
 use App\Exception\InventoryItemNotFoundException;
 use App\Repository\InventoryItemRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Exception;
 
 class AssetService
 {

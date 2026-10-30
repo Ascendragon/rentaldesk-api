@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Entity;
 
@@ -34,14 +35,14 @@ class Asset
     #[ORM\Column(length: 64, unique: true)]
     private string $inventoryCode;
 
-    #[Orm\Column(
+    #[ORM\Column(
         type: Types::BIGINT,
         nullable: true
     )]
     #[Assert\PositiveOrZero]
     private ?int $purchasePriceKopecks = null;
 
-    #[Orm\Column(
+    #[ORM\Column(
         type: Types::DATE_IMMUTABLE,
         nullable: true
     )]
@@ -114,7 +115,7 @@ class Asset
     public function sendToMaintenance(): void
     {
         if ($this->status !== AssetStatus::ACTIVE) {
-            throw new \DomainException("Asset cannot be send to maintenance");
+            throw new \DomainException("Asset cannot be sent to maintenance");
         }
 
         $this->status = AssetStatus::MAINTENANCE;
@@ -123,7 +124,7 @@ class Asset
     public function returnToService(): void
     {
         if ($this->status !== AssetStatus::MAINTENANCE) {
-            throw new \DomainException("Asset cannot be return to service");
+            throw new \DomainException("Asset cannot be returned to service");
         }
 
         $this->status = AssetStatus::ACTIVE;
