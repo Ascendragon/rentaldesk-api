@@ -4,8 +4,10 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Asset;
+use App\Exception\InventoryCodeAlreadyExistsException;
 use App\Exception\InventoryItemNotFoundException;
 use App\Repository\InventoryItemRepository;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 
 class AssetService
@@ -28,8 +30,16 @@ class AssetService
         }
         $asset = new Asset($inventoryItem, $inventoryCode, $purchasePriceKopecks, $purchasedAt);
 
-        $this->em->persist($asset);
-        $this->em->flush();
+        try {
+            $this->em->persist($asset);
+            $this->em->flush();
+        } catch (UniqueConstraintViolationException $e) {
+            throw new InventoryCodeAlreadyExistsException(
+                'Inventory code already exists.',
+                previous: $e
+            );
+        }
+
         return $asset;
     }
 }

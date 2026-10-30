@@ -28,7 +28,7 @@ class AssetController extends AbstractController
         format: 'json'
     )]
     public function register(
-        int $id,
+        int                $id,
         #[MapRequestPayload(acceptFormat: 'json')]
         CreateAssetRequest $request
     ): JsonResponse
@@ -48,24 +48,12 @@ class AssetController extends AbstractController
                 Response::HTTP_UNPROCESSABLE_ENTITY
             );
         }
-        try {
-            $asset = $this->service->register(
-                $id,
-                $request->inventoryCode,
-                $request->purchasePriceKopecks,
-                $purchasedAt
-            );
-        } catch (InventoryItemNotFoundException $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
-        } catch (UniqueConstraintViolationException $e) {
-            return $this->json(
-                [
-                    'error' => 'inventory_code_conflict',
-                    'message' => 'Инвентарный номер уже существует',
-                ],
-                Response::HTTP_CONFLICT
-            );
-        }
+        $asset = $this->service->register(
+            $id,
+            $request->inventoryCode,
+            $request->purchasePriceKopecks,
+            $purchasedAt
+        );
 
 
         return $this->json(AssetResponse::fromEntity($asset), Response::HTTP_CREATED);

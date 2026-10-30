@@ -16,12 +16,14 @@ PHP 8.5, Symfony 7.4, Doctrine ORM/DBAL, PostgreSQL в Docker, WSL; Vue 3/TypeSc
 - `Asset` + `AssetStatus` реализованы; `AssetTest` **9 тестов / 18 assertions**.
 - Миграция `Version20261029215033`; пользователь подтвердил её доработку/применение. Валидность ORM mapping проверена после изоляции незавершённых заказов.
 - `AssetPersistenceTest` с PostgreSQL успешно выполнен **дважды** (по 8 assertions), для изоляции согласован rollback.
-- Backend Git baseline **`433fa85`**; активная ветка `feature/asset-model`. Предложенные коммиты с PHPUnit, доменом, миграцией и docs **ещё не подтверждены**.
-- `src/DTO/Request/CreateAssetRequest.php` существует в рабочей папке, но **ещё не просмотрен**.
+- Backend Git baseline **`433fa85`**; активная ветка `feature/asset-model`. Были созданы коммиты доменной модели, миграции, инфраструктуры тестов и регистрации Asset; origin для feature-ветки подтверждён.
+- `CreateAssetRequest` и регистрация Asset реализованы; ошибки 400/404/409/422 проверены функционально.
 
-## Немедленный следующий тикет
+## Текущий этап: RENTAL-CORE-001 (30.10.2026)
 
-**RENTAL-005.5:** API создания физического экземпляра `POST /api/inventory/{id}/assets`. Входные поля: `inventoryCode`, `purchasePriceKopecks?`, `purchasedAt?`; статус `active` задаётся сервером. Ответ `201`, несуществующая модель `404`, валидация `422`, дубликат кода `409`, неправильный JSON `400`. Начать с code review уже существующего `CreateAssetRequest.php`; дальше Service, Controller, Response DTO, реальные HTTP-проверки. Код пишет пользователь.
+Пользователь самостоятельно реализовал `InventoryCodeAlreadyExistsException`, доработал `AssetService`, написал `ApiExceptionListener` для RFC 9457 и тесты `ApiProblemDetailsTest` через Symfony `WebTestCase`. Последний полученный вывод **6 тестов / 48 assertions, PASS (0.319 с)**. Сценарии: 400, 404, 405, 409, 422, 500; 409 тестировался через реальный UNIQUE PostgreSQL с DBAL cleanup, 500 через PHPUnit mock `AssetService`, секретная строка отсутствовала в HTTP-ответе, но отображалась в логах теста.
+
+**Следующие действия:** проверить название test DB, запустить весь PHPUnit, коммит backend, применить frontend v0.4.2 для Problem Details, обновить Git-документы; затем RENTAL-005.6 `GET /api/inventory/{id}/assets`. Не писать PHP вместо пользователя, если он не просит; frontend и документы остаются ответственностью ассистента.
 
 ## Важнейшие риски
 
