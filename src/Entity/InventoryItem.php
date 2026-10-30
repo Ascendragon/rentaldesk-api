@@ -23,9 +23,13 @@ class InventoryItem
     #[ORM\Column]
     private int $reserved;
 
+    #[ORM\Column]
+    private int $dailyRateKopecks;
+
     public function __construct(
         string $name,
         int $stock,
+        int $dailyRateKopecks = 0,
         int $reserved = 0
     )
     {
@@ -43,8 +47,13 @@ class InventoryItem
         $this->name = $name;
         $this->stock = $stock;
         $this->reserved = $reserved;
+        $this->dailyRateKopecks = $dailyRateKopecks;
     }
 
+    public function getDailyRateKopecks(): int
+    {
+        return $this->dailyRateKopecks;
+    }
     public function getAvailableUnits(): int
     {
         return $this->stock - $this->reserved;
