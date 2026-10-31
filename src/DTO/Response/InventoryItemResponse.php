@@ -13,6 +13,7 @@ final readonly class InventoryItemResponse
         public int $stock,
         public int $reserved,
         public int $available,
+        public int $dailyRateKopecks
     ) {}
 
     public static function fromEntity(InventoryItem $item): self
@@ -22,7 +23,8 @@ final readonly class InventoryItemResponse
             name: $item->getName(),
             stock: $item->getStock(),
             reserved: $item->getReserved(),
-            available: $item->getAvailableUnits()
+            available: $item->getAvailableUnits(),
+            dailyRateKopecks: $item->getDailyRateKopecks()
         );
     }
 }

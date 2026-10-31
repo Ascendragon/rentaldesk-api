@@ -15,9 +15,10 @@ class InventoryItemService
     public function create(
         string $name,
         int $stock,
+        int $dailyRateKopecks = 0
     ) : InventoryItem
     {
-        $item = new InventoryItem(trim($name), $stock);
+        $item = new InventoryItem(trim($name), $stock, $dailyRateKopecks);
 
         $this->em->persist($item);
         $this->em->flush();

@@ -15,5 +15,7 @@ final readonly class CreateInventoryItemRequest
         #[Assert\PositiveOrZero]
         public int $stock,
 
+        #[Assert\PositiveOrZero]
+        public int $dailyRateKopecks = 0
     ){}
 }

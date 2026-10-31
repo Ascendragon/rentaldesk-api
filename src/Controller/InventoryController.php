@@ -37,7 +37,7 @@ class InventoryController extends AbstractController
         CreateInventoryItemRequest $request,
     ): JsonResponse
     {
-        $item = $this->service->create($request->name, $request->stock);
+        $item = $this->service->create($request->name, $request->stock, $request->dailyRateKopecks);
 
         return $this->json(InventoryItemResponse::fromEntity($item), Response::HTTP_CREATED);
     }
