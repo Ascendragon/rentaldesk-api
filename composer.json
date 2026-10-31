@@ -1,4 +1,6 @@
 {
+    "name": "rentaldesk/backend",
+    "description": "Equipment rental management backend built with Symfony",
     "type": "project",
     "license": "proprietary",
     "minimum-stability": "stable",
@@ -21,8 +23,7 @@
         "symfony/runtime": "7.4.*",
         "symfony/serializer": "7.4.*",
         "symfony/validator": "7.4.*",
-        "symfony/yaml": "7.4.*",
-        "ext-cassandra": "*"
+        "symfony/yaml": "7.4.*"
     },
     "config": {
         "allow-plugins": {
