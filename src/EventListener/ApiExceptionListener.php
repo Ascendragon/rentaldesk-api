@@ -5,6 +5,8 @@ namespace App\EventListener;
 
 use App\Exception\InventoryCodeAlreadyExistsException;
 use App\Exception\InventoryItemNotFoundException;
+use App\Exception\RentalOrderNotEditableException;
+use App\Exception\RentalRateNotConfiguredException;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -59,7 +61,18 @@ final class ApiExceptionListener
                     'message' => $violation->getMessage(),
                 ];
             }
-        } elseif (
+        } elseif ($exception instanceof RentalOrderNotEditableException) {
+            $status = 409;
+            $title = 'Conflict';
+            $detail = 'Cannot modify a non-draft order.';
+            $code = 'rental_order_not_editable';
+        } elseif ($exception instanceof RentalRateNotConfiguredException) {
+            $status = 409;
+            $title = 'Conflict';
+            $detail = 'Rental rate is not configured.';
+            $code = 'rental_rate_not_configured';
+        }
+        elseif (
             $exception instanceof HttpExceptionInterface
             && $exception->getStatusCode() === 400
         ) {
@@ -67,6 +80,7 @@ final class ApiExceptionListener
             $title = 'Bad Request';
             $detail = 'Malformed request body.';
             $code = 'malformed_request';
+
         } elseif ($exception instanceof HttpExceptionInterface) {
             $status = $exception->getStatusCode();
 

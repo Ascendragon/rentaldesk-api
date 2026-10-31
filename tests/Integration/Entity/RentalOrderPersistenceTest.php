@@ -175,7 +175,7 @@ final class RentalOrderPersistenceTest extends KernelTestCase
 
             // Запоминаем модели до сохранения
 
-            $expectedMakitaStart = $expectedMakitaStart = $makitaItem->getStartsAt()->getTimestamp();
+            $expectedMakitaStart = $makitaItem->getStartsAt()->getTimestamp();
             $expectedMakitaEnd = $makitaItem->getEndsAt()->getTimestamp();
 
             $expectedBoschStart = $boschItem->getStartsAt()->getTimestamp();

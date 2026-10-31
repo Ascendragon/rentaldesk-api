@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enums\RentalOrderStatus;
+use App\Exception\RentalOrderNotEditableException;
+use App\Exception\RentalRateNotConfiguredException;
 use App\Repository\RentalOrderRepository;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -43,10 +45,10 @@ class RentalOrder
     public function addItem(InventoryItem $inventoryItem, int $quantity, DateTimeImmutable $startsAt, int $rentalDays): RentalOrderItem
     {
         if ($this->status !== RentalOrderStatus::DRAFT) {
-            throw new \DomainException('Cannot modify a non-draft order.');
+            throw new RentalOrderNotEditableException('Cannot modify a non-draft order.');
         }
         if ($inventoryItem->getDailyRateKopecks() <= 0) {
-            throw new \DomainException("Cannot add item with zero daily rate.");
+            throw new RentalRateNotConfiguredException("Cannot add item with zero daily rate.");
         }
         $orderItem = new RentalOrderItem($this, $inventoryItem, $quantity, $startsAt, $rentalDays, $inventoryItem->getDailyRateKopecks());
         $this->items->add($orderItem);

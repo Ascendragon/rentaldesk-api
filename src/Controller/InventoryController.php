@@ -25,7 +25,7 @@ class InventoryController extends AbstractController
     {
         $items = array_map(
             InventoryItemResponse::fromEntity(...),
-            $repository->findAll()
+            $repository->findBy([], ['id' => 'ASC'])
         );
 
         return $this->json($items);

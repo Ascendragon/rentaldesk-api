@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Entity;
 use App\Entity\InventoryItem;
 use App\Entity\RentalOrder;
 use App\Enums\RentalOrderStatus;
+use App\Exception\RentalRateNotConfiguredException;
 use PHPUnit\Framework\TestCase;
 
 final class RentalOrderTest extends TestCase
@@ -153,8 +154,8 @@ final class RentalOrderTest extends TestCase
                 3
             );
 
-            self::fail('Expected DomainException.');
-        } catch (\DomainException $e) {
+            self::fail('Expected RentalRateNotConfiguredException.');
+        } catch (RentalRateNotConfiguredException $e) {
             self::assertSame(
                 'Cannot add item with zero daily rate.',
                 $e->getMessage()

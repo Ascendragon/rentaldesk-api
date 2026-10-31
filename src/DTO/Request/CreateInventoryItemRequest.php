@@ -13,9 +13,11 @@ final readonly class CreateInventoryItemRequest
         public string $name,
 
         #[Assert\PositiveOrZero]
+        #[Assert\Range(min: 0, max: 2_147_483_647)]
         public int $stock,
 
         #[Assert\PositiveOrZero]
+        #[Assert\Range(min: 0, max: 2_147_483_647)]
         public int $dailyRateKopecks = 0
     ){}
 }

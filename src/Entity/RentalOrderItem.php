@@ -42,8 +42,8 @@ class RentalOrderItem
     #[ORM\Column]
     private int $dailyRateKopecks;
 
-    /*
-     * @internal
+    /**
+     * @internal Use RentalOrder::addItem() to create order items.
      */
     public function __construct(
         RentalOrder        $rentalOrder,
@@ -71,11 +71,6 @@ class RentalOrderItem
 
         if ($quantity <= 0) {
             throw new \InvalidArgumentException('Quantity must be positive');
-        }
-        if ($startsAtUtc >= $endsAt) {
-            throw new \InvalidArgumentException(
-                'StartsAt must be less than endsAt'
-            );
         }
 
         if ($dailyRateKopecks < 0 ) {
