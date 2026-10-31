@@ -44,6 +44,10 @@ class InventoryItem
             );
         }
 
+        if ($dailyRateKopecks < 0) {
+            throw new \InvalidArgumentException("Daily rate cannot be negative.");
+        }
+
         $this->name = $name;
         $this->stock = $stock;
         $this->reserved = $reserved;

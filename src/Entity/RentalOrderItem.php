@@ -78,7 +78,6 @@ class RentalOrderItem
         $this->endsAt = $endsAt;
         $this->dailyRateKopecks = $dailyRateKopecks;
 
-        $rentalOrder->addItem($this);
     }
 
     public function getRentalDays(): int

@@ -28,26 +28,32 @@ final class RentalOrderPersistenceTest extends KernelTestCase
         $connection->beginTransaction();
 
         try {
-            $makita = new InventoryItem('Перфоратор Makita', 2);
-            $bosch = new InventoryItem('Дрель Bosch', 1);
-            $order = new RentalOrder();
-
-            $makitaItem = new RentalOrderItem(
-                $order,
-                $makita,
+            $makita = new InventoryItem(
+                'Перфоратор Makita',
                 2,
-                new \DateTimeImmutable('2026-11-10 13:00:00'),
-                3,
                 100_000
             );
 
-            $boschItem = new RentalOrderItem(
-                $order,
+            $bosch = new InventoryItem(
+                'Дрель Bosch',
+                1,
+                60_000
+            );
+
+            $order = new RentalOrder();
+
+            $makitaItem = $order->addItem(
+                $makita,
+                2,
+                new \DateTimeImmutable('2026-11-10 13:00:00'),
+                3
+            );
+
+            $boschItem = $order->addItem(
                 $bosch,
                 1,
                 new \DateTimeImmutable('2026-11-12 10:00:00'),
-                7,
-                60_000
+                7
             );
 
 

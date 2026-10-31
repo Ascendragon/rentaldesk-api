@@ -5,7 +5,6 @@ namespace App\Tests\Unit\Entity;
 
 use App\Entity\InventoryItem;
 use App\Entity\RentalOrder;
-use App\Entity\RentalOrderItem;
 use App\Enums\RentalOrderStatus;
 use PHPUnit\Framework\TestCase;
 
@@ -15,8 +14,8 @@ final class RentalOrderTest extends TestCase
     {
         $order = new RentalOrder();
 
-        $makita = new InventoryItem('Перфоратор Makita', 2);
-        $bosch = new InventoryItem('Дрель Bosch', 1);
+        $makita = new InventoryItem('Перфоратор Makita', 2, 100_000);
+        $bosch = new InventoryItem('Дрель Bosch', 1, 60_000);
 
         $makitaStartsAt = new \DateTimeImmutable(
             '2026-11-10T13:00:00+03:00'
@@ -26,22 +25,18 @@ final class RentalOrderTest extends TestCase
             '2026-11-12T10:00:00+03:00'
         );
 
-        $makitaItem = new RentalOrderItem(
-            $order,
+        $makitaItem = $order->addItem(
             $makita,
             2,
             $makitaStartsAt,
-            3,
-            100000
+            3
         );
 
-        $boschItem = new RentalOrderItem(
-            $order,
+        $boschItem = $order->addItem(
             $bosch,
             1,
             $boschStartsAt,
-            7,
-            60000
+            7
         );
 
 
@@ -81,17 +76,15 @@ final class RentalOrderTest extends TestCase
     {
         // Arrange
         $order = new RentalOrder();
-        $inventoryItem = new InventoryItem('Перфоратор Makita', 5);
+        $inventoryItem = new InventoryItem('Перфоратор Makita', 5, 100_000);
 
         // Act
         try {
-            new RentalOrderItem(
-                $order,
+            $order->addItem(
                 $inventoryItem,
                 0,
                 new \DateTimeImmutable('2026-11-10 13:00:00'),
-                3,
-                100000
+                3
             );
 
             self::fail('Expected InvalidArgumentException.');
@@ -110,16 +103,14 @@ final class RentalOrderTest extends TestCase
     public function testRejectsZeroRentalDaysWithoutModifyingOrder(): void
     {
         $order = new RentalOrder();
-        $inventoryItem = new InventoryItem('Перфоратор Makita', 5);
+        $inventoryItem = new InventoryItem('Перфоратор Makita', 5, 100_000);
 
         try {
-            new RentalOrderItem(
-                $order,
+            $order->addItem(
                 $inventoryItem,
                 2,
                 new \DateTimeImmutable('2026-11-10 13:00:00'),
-                0,
-                100000
+                0
             );
 
             self::fail('Expected InvalidArgumentException.');
@@ -133,32 +124,45 @@ final class RentalOrderTest extends TestCase
         self::assertCount(0, $order->getItems());
     }
 
+    public function testRejectsNegativeInventoryDailyRate(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
 
+        new InventoryItem(
+            'Перфоратор Makita',
+            5,
+            -100
+        );
+    }
 
-    public function testRejectsNegativeDailyRateWithoutModifyingOrder(): void
+    public function testRejectsZeroDailyRateWithoutModifyingOrder(): void
     {
         $order = new RentalOrder();
-        $inventoryItem = new InventoryItem('Перфоратор Makita', 5);
+
+        $inventoryItem = new InventoryItem(
+            'Перфоратор Makita',
+            5,
+            0
+        );
 
         try {
-            new RentalOrderItem(
-                $order,
+            $order->addItem(
                 $inventoryItem,
                 2,
                 new \DateTimeImmutable('2026-11-10 13:00:00'),
-                3,
-                -100
+                3
             );
 
-            self::fail('Expected InvalidArgumentException.');
-        } catch (\InvalidArgumentException $e) {
+            self::fail('Expected DomainException.');
+        } catch (\DomainException $e) {
             self::assertSame(
-                'DailyRateKopecks cannot be negative',
+                'Cannot add item with zero daily rate.',
                 $e->getMessage()
             );
         }
 
         self::assertCount(0, $order->getItems());
+        self::assertSame(0, $order->getTotalPriceKopecks());
     }
 
 

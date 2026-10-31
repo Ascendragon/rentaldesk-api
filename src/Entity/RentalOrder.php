@@ -39,19 +39,17 @@ class RentalOrder
         $this->items = new ArrayCollection();
     }
 
-    public function addItem(RentalOrderItem $item): void
+    public function addItem(InventoryItem $inventoryItem, int $quantity, DateTimeImmutable $startsAt, int $rentalDays): RentalOrderItem
     {
         if ($this->status !== RentalOrderStatus::DRAFT) {
             throw new \DomainException('Cannot modify a non-draft order.');
         }
-
-        if ($item->getRentalOrder() !== $this) {
-            throw new \InvalidArgumentException('Order item belongs to another order.');
+        if ($inventoryItem->getDailyRateKopecks() <= 0) {
+            throw new \DomainException("Cannot add item with zero daily rate.");
         }
-
-        if (!$this->items->contains($item)) {
-            $this->items->add($item);
-        }
+        $orderItem = new RentalOrderItem($this, $inventoryItem, $quantity, $startsAt, $rentalDays, $inventoryItem->getDailyRateKopecks());
+        $this->items->add($orderItem);
+        return $orderItem;
     }
     /** @return list<RentalOrderItem> */
     public function getItems(): array
