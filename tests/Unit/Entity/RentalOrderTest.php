@@ -53,13 +53,13 @@ final class RentalOrderTest extends TestCase
         self::assertSame(7, $boschItem->getRentalDays());
 
         self::assertSame(
-            '2026-11-13 13:00:00+03:00',
-            $makitaItem->getEndsAt()->format('Y-m-d H:i:sP')
+            (new \DateTimeImmutable('2026-11-13T13:00:00+03:00'))->getTimestamp(),
+            $makitaItem->getEndsAt()->getTimestamp()
         );
 
         self::assertSame(
-            '2026-11-19 10:00:00+03:00',
-            $boschItem->getEndsAt()->format('Y-m-d H:i:sP')
+            (new \DateTimeImmutable('2026-11-19T10:00:00+03:00'))->getTimestamp(),
+            $boschItem->getEndsAt()->getTimestamp()
         );
 
         // Assert: стоимость позиций
@@ -165,5 +165,79 @@ final class RentalOrderTest extends TestCase
         self::assertSame(0, $order->getTotalPriceKopecks());
     }
 
+    public function testNormalizesRentalPeriodToUtcAndPreservesDuration(): void
+    {
+        $startsAt = new \DateTimeImmutable(
+            '2026-11-10T13:00:00+03:00'
+        );
 
+        $rentalDays = 5;
+
+        $makita = new InventoryItem('Перфоратор Makita', 7, 200000);
+
+        $order = new RentalOrder();
+
+        $item = $order->addItem($makita, 3, $startsAt, $rentalDays);
+
+        self::assertSame(
+            '2026-11-10 10:00:00+00:00',
+            $item->getStartsAt()->format('Y-m-d H:i:sP')
+        );
+
+        self::assertSame(
+            '2026-11-15 10:00:00+00:00',
+            $item->getEndsAt()->format('Y-m-d H:i:sP')
+        );
+
+        self::assertSame(
+            432_000,
+            $item->getEndsAt()->getTimestamp()
+            - $item->getStartsAt()->getTimestamp()
+        );
+
+        self::assertSame(5, $item->getRentalDays());
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function testRentalDurationRemainsExactAcrossDstTransition(): void
+    {
+        $startsAt = new \DateTimeImmutable(
+            '2027-03-27 13:00:00',
+            new \DateTimeZone('Europe/Amsterdam')
+        );
+
+        $rentalDays = 2;
+
+        $makita = new InventoryItem('Перфоратор Makita', 7, 200000);
+
+        $order = new RentalOrder();
+
+        $item = $order->addItem($makita, 3, $startsAt, $rentalDays);
+
+        self::assertSame(
+            '2027-03-27 12:00:00+00:00',
+            $item->getStartsAt()->format('Y-m-d H:i:sP')
+        );
+
+        self::assertSame(
+            '2027-03-29 12:00:00+00:00',
+            $item->getEndsAt()->format('Y-m-d H:i:sP')
+        );
+
+        self::assertSame(
+            48 * 60 * 60,
+            $item->getEndsAt()->getTimestamp()
+            - $item->getStartsAt()->getTimestamp()
+        );
+        self::assertSame(2, $item->getRentalDays());
+
+        self::assertSame(
+            '2027-03-29 14:00:00+02:00',
+            $item->getEndsAt()
+                ->setTimezone(new \DateTimeZone('Europe/Amsterdam'))
+                ->format('Y-m-d H:i:sP')
+        );
+    }
 }

@@ -57,7 +57,6 @@ final class RentalOrderPersistenceTest extends KernelTestCase
             );
 
 
-
             $em->persist($makita);
             $em->persist($bosch);
             $em->persist($order);
@@ -131,6 +130,116 @@ final class RentalOrderPersistenceTest extends KernelTestCase
             );
         } finally {
             $connection->rollBack();
+        }
+    }
+
+    public function testPreservesRentalInstantsAfterDatabaseReload(): void
+    {
+        self::bootKernel();
+
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+
+        $connection = $em->getConnection();
+
+        self::assertSame(
+            'rentaldesk_test',
+            $connection->fetchOne('SELECT current_database()')
+        );
+
+        $connection->beginTransaction();
+
+        try {
+            $order = new RentalOrder();
+
+            $makita = new InventoryItem('Перфоратор Makita', 2, 100_000);
+            $bosch = new InventoryItem('Дрель Bosch', 1, 60_000);
+
+            $makitaStart = new \DateTimeImmutable('2026-11-12T10:00:00+05:00');
+            $boschStart = new \DateTimeImmutable(
+                '2026-11-12T10:00:00+05:00'
+            );
+
+            $makitaItem = $order->addItem(
+                $makita,
+                2,
+                $makitaStart,
+                3
+            );
+
+            $boschItem = $order->addItem(
+                $bosch,
+                1,
+                $boschStart,
+                7
+            );
+
+            // Запоминаем модели до сохранения
+
+            $expectedMakitaStart = $expectedMakitaStart = $makitaItem->getStartsAt()->getTimestamp();
+            $expectedMakitaEnd = $makitaItem->getEndsAt()->getTimestamp();
+
+            $expectedBoschStart = $boschItem->getStartsAt()->getTimestamp();
+            $expectedBoschEnd = $boschItem->getEndsAt()->getTimestamp();
+
+            $em->persist($makita);
+            $em->persist($bosch);
+            $em->persist($order);
+
+            // RentalOrderItem сохраняются через cascade persist.
+            $em->flush();
+
+            $orderId = $order->getId();
+            $makitaId = $makita->getId();
+            $boschId = $bosch->getId();
+
+            self::assertNotNull($orderId);
+            self::assertNotNull($makitaId);
+            self::assertNotNull($boschId);
+
+            // Убираем сущности из памяти Doctrine.
+            $em->clear();
+
+            // Act: повторно читаем заказ из PostgreSQL.
+            $reloaded = $em->getRepository(RentalOrder::class)
+                ->find($orderId);
+
+            self::assertInstanceOf(RentalOrder::class, $reloaded);
+
+            $items = [];
+
+            foreach ($reloaded->getItems() as $item) {
+                $items[$item->getInventoryItem()->getId()] = $item;
+            }
+
+            self::assertCount(2, $items);
+            self::assertArrayHasKey($makitaId, $items);
+            self::assertArrayHasKey($boschId, $items);
+
+            // Assert: Makita
+            self::assertSame(
+                $expectedMakitaStart,
+                $items[$makitaId]->getStartsAt()->getTimestamp()
+            );
+
+            self::assertSame(
+                $expectedMakitaEnd,
+                $items[$makitaId]->getEndsAt()->getTimestamp()
+            );
+
+            // Assert: Bosch
+            self::assertSame(
+                $expectedBoschStart,
+                $items[$boschId]->getStartsAt()->getTimestamp()
+            );
+
+            self::assertSame(
+                $expectedBoschEnd,
+                $items[$boschId]->getEndsAt()->getTimestamp()
+            );
+
+        } finally {
+            $connection->rollBack();
+
         }
     }
 }

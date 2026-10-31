@@ -33,15 +33,18 @@ class RentalOrderItem
     #[ORM\Column]
     private int $quantity;
 
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE)]
     private DateTimeImmutable $startsAt;
 
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE)]
     private DateTimeImmutable $endsAt;
 
     #[ORM\Column]
     private int $dailyRateKopecks;
 
+    /*
+     * @internal
+     */
     public function __construct(
         RentalOrder        $rentalOrder,
         InventoryItem      $inventoryItem,
@@ -59,22 +62,27 @@ class RentalOrderItem
                 'Rental days must be positive.'
             );
         }
-        $endsAt = $startsAt->add(
+        $startsAtUtc = $startsAt->setTimezone(
+            new \DateTimeZone('UTC')
+        );
+        $endsAt = $startsAtUtc->add(
             new DateInterval("P{$rentalDays}D")
         );
 
         if ($quantity <= 0) {
             throw new \InvalidArgumentException('Quantity must be positive');
         }
-        if ($startsAt >= $endsAt) {
-            throw new \InvalidArgumentException("StartsAt must be less than endsAt");
+        if ($startsAtUtc >= $endsAt) {
+            throw new \InvalidArgumentException(
+                'StartsAt must be less than endsAt'
+            );
         }
 
         if ($dailyRateKopecks < 0 ) {
             throw new \InvalidArgumentException("DailyRateKopecks cannot be negative");
         }
         $this->quantity = $quantity;
-        $this->startsAt = $startsAt;
+        $this->startsAt = $startsAtUtc;
         $this->endsAt = $endsAt;
         $this->dailyRateKopecks = $dailyRateKopecks;
 

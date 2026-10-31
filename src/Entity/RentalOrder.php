@@ -8,6 +8,7 @@ use App\Repository\RentalOrderRepository;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: RentalOrderRepository::class)]
@@ -21,7 +22,7 @@ class RentalOrder
     #[ORM\Column(enumType: RentalOrderStatus::class)]
     private RentalOrderStatus $status;
 
-    #[ORM\Column]
+    #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE)]
     private DateTimeImmutable $createdAt;
 
     /** @var Collection<int, RentalOrderItem> */
